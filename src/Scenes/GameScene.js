@@ -38,7 +38,10 @@ let gameOptions = {
   jumps: 2,
 
   // % of probability a coin appears on the platform
-  coinPercent: 25
+  coinPercent: 25,
+
+  // % of probability a fire appears on the platform
+  firePercent: 25
 }
 
 export default class GameScene extends Phaser.Scene {
@@ -59,6 +62,12 @@ export default class GameScene extends Phaser.Scene {
     this.load.spritesheet("coin", "assets/coin.png", {
       frameWidth: 20,
       frameHeight: 20
+    });
+
+    // the firecamp is a sprite sheet made by 32x58 pixels
+    this.load.spritesheet("fire", "assets/fire.png", {
+      frameWidth: 40,
+      frameHeight: 70
     });
 
     // mountains are a sprite sheet made by 512x512 pixels
@@ -109,6 +118,24 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
+    // group with all active firecamps.
+    this.fireGroup = this.add.group({
+ 
+      // once a firecamp is removed, it's added to the pool
+      removeCallback: function(fire){
+          fire.scene.firePool.add(fire)
+      }
+    });
+
+    // fire pool
+    this.firePool = this.add.group({
+ 
+      // once a fire is removed from the pool, it's added to the active fire group
+      removeCallback: function(fire){
+          fire.scene.fireGroup.add(fire)
+      }
+    });
+
     // adding a mountain
     this.addMountains()
 
@@ -151,6 +178,17 @@ export default class GameScene extends Phaser.Scene {
       });
     }, null, this);
 
+    // setting collisions between the player and the fire group
+    this.physics.add.overlap(this.player, this.fireGroup, function(player, fire){
+ 
+      this.dying = true;
+      this.player.anims.stop();
+      this.player.setFrame(2);
+      this.player.body.setVelocityY(-200);
+      this.physics.world.removeCollider(this.platformCollider);
+
+    }, null, this);
+
     // setting player animation
     this.anims.create({
       key: "run",
@@ -171,6 +209,17 @@ export default class GameScene extends Phaser.Scene {
       }),
       frameRate: 15,
       yoyo: true,
+      repeat: -1
+    });
+
+    // setting fire animation
+    this.anims.create({
+      key: "burn",
+      frames: this.anims.generateFrameNumbers("fire", {
+          start: 0,
+          end: 4
+      }),
+      frameRate: 15,
       repeat: -1
     });
 
@@ -217,47 +266,71 @@ export default class GameScene extends Phaser.Scene {
     this.addedPlatforms ++;
     let platform;
     if(this.platformPool.getLength()){
-        platform = this.platformPool.getFirst();
-        platform.x = posX;
-        platform.y = posY;
-        platform.active = true;
-        platform.visible = true;
-        this.platformPool.remove(platform);
-        let newRatio =  platformWidth / platform.displayWidth;
-        platform.displayWidth = platformWidth;
-        platform.tileScaleX = 1 / platform.scaleX;
+      platform = this.platformPool.getFirst();
+      platform.x = posX;
+      platform.y = posY;
+      platform.active = true;
+      platform.visible = true;
+      this.platformPool.remove(platform);
+      let newRatio =  platformWidth / platform.displayWidth;
+      platform.displayWidth = platformWidth;
+      platform.tileScaleX = 1 / platform.scaleX;
     }
     else{
-        platform = this.add.tileSprite(posX, posY, platformWidth, 32, "platform");
-        this.physics.add.existing(platform);
-        platform.body.setImmovable(true);
-        platform.body.setVelocityX(Phaser.Math.Between(gameOptions.platformSpeedRange[0], gameOptions.platformSpeedRange[1]) * -1);
-        platform.setDepth(2);
-        this.platformGroup.add(platform);
+      platform = this.add.tileSprite(posX, posY, platformWidth, 32, "platform");
+      this.physics.add.existing(platform);
+      platform.body.setImmovable(true);
+      platform.body.setVelocityX(Phaser.Math.Between(gameOptions.platformSpeedRange[0], gameOptions.platformSpeedRange[1]) * -1);
+      platform.setDepth(2);
+      this.platformGroup.add(platform);
     }
     this.nextPlatformDistance = Phaser.Math.Between(gameOptions.spawnRange[0], gameOptions.spawnRange[1]);
 
-    // is there a coin over the platform?
+    // if this is not the starting platform...
     if(this.addedPlatforms > 1){
-        if(Phaser.Math.Between(1, 100) <= gameOptions.coinPercent){
-            if(this.coinPool.getLength()){
-                let coin = this.coinPool.getFirst();
-                coin.x = posX;
-                coin.y = posY - 96;
-                coin.alpha = 1;
-                coin.active = true;
-                coin.visible = true;
-                this.coinPool.remove(coin);
-            }
-            else{
-                let coin = this.physics.add.sprite(posX, posY - 96, "coin");
-                coin.setImmovable(true);
-                coin.setVelocityX(platform.body.velocity.x);
-                coin.anims.play("rotate");
-                coin.setDepth(2);
-                this.coinGroup.add(coin);
-            }
+
+      // is there a coin over the platform?
+      if(Phaser.Math.Between(1, 100) <= gameOptions.coinPercent){
+        if(this.coinPool.getLength()){
+            let coin = this.coinPool.getFirst();
+            coin.x = posX;
+            coin.y = posY - 96;
+            coin.alpha = 1;
+            coin.active = true;
+            coin.visible = true;
+            this.coinPool.remove(coin);
         }
+        else{
+          let coin = this.physics.add.sprite(posX, posY - 96, "coin");
+          coin.setImmovable(true);
+          coin.setVelocityX(platform.body.velocity.x);
+          coin.anims.play("rotate");
+          coin.setDepth(2);
+          this.coinGroup.add(coin);
+        }
+      }
+ 
+      // is there a fire over the platform?
+      if(Phaser.Math.Between(1, 100) <= gameOptions.firePercent){
+        if(this.firePool.getLength()){
+          let fire = this.firePool.getFirst();
+          fire.x = posX - platformWidth / 2 + Phaser.Math.Between(1, platformWidth);
+          fire.y = posY - 46;
+          fire.alpha = 1;
+          fire.active = true;
+          fire.visible = true;
+          this.firePool.remove(fire);
+        }
+        else{
+          let fire = this.physics.add.sprite(posX - platformWidth / 2 + Phaser.Math.Between(1, platformWidth), posY - 46, "fire");
+          fire.setImmovable(true);
+          fire.setVelocityX(platform.body.velocity.x);
+          fire.setSize(8, 2, true)
+          fire.anims.play("burn");
+          fire.setDepth(2);
+          this.fireGroup.add(fire);
+        }
+      }
     }
   }
 
@@ -275,11 +348,13 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  update () {
+  update(){
+ 
     // game over
     if(this.player.y > game.config.height){
-      this.scene.start("PlayGame");
+        this.scene.start("PlayGame");
     }
+
     this.player.x = gameOptions.playerStartPosition;
 
     // recycling platforms
@@ -302,6 +377,14 @@ export default class GameScene extends Phaser.Scene {
         if(coin.x < - coin.displayWidth / 2){
             this.coinGroup.killAndHide(coin);
             this.coinGroup.remove(coin);
+        }
+    }, this);
+
+    // recycling fire
+    this.fireGroup.getChildren().forEach(function(fire){
+        if(fire.x < - fire.displayWidth / 2){
+            this.fireGroup.killAndHide(fire);
+            this.fireGroup.remove(fire);
         }
     }, this);
 
