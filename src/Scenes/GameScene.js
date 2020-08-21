@@ -79,6 +79,9 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
 
+    this.score = 0;
+    this.scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
     // group with all active mountains.
     this.mountainGroup = this.add.group();
 
@@ -164,6 +167,8 @@ export default class GameScene extends Phaser.Scene {
 
     // setting collisions between the player and the coin group
     this.physics.add.overlap(this.player, this.coinGroup, function(player, coin){
+      this.score += 10;
+      this.scoreText.setText('Score: ' + this.score);
       this.tweens.add({
           targets: coin,
           y: coin.y - 100,
@@ -174,8 +179,8 @@ export default class GameScene extends Phaser.Scene {
           onComplete: function(){
               this.coinGroup.killAndHide(coin);
               this.coinGroup.remove(coin);
-          }
-      });
+            }
+          });
     }, null, this);
 
     // setting collisions between the player and the fire group
@@ -352,7 +357,7 @@ export default class GameScene extends Phaser.Scene {
  
     // game over
     if(this.player.y > game.config.height){
-        this.scene.start("PlayGame");
+        this.scene.start("GameScene");
     }
 
     this.player.x = gameOptions.playerStartPosition;
