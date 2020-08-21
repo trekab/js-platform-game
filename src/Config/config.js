@@ -7,6 +7,6 @@ export default {
   height: 600,
   backgroundColor: 0x0c88c7,
   physics: {
-    default: 'arcade'
+    default: 'arcade',
   },
 };
