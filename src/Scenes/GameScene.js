@@ -156,7 +156,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.setDepth(2);
 
     // setting collisions between the player and the platform group
-    this.physics.add.collider(this.player, this.platformGroup, function () {
+    this.physics.add.collider(this.player, this.platformGroup, () => {
       // play "run" animation if the player is on a platform
       if (!this.player.anims.isPlaying) {
         this.player.anims.play('run');
@@ -164,7 +164,7 @@ export default class GameScene extends Phaser.Scene {
     }, null, this);
 
     // setting collisions between the player and the coin group
-    this.physics.add.overlap(this.player, this.coinGroup, function (player, coin) {
+    this.physics.add.overlap(this.player, this.coinGroup, (player, coin) => {
       this.score += 10;
       this.scoreText.setText(`Score: ${this.score}`);
       this.tweens.add({
@@ -272,7 +272,6 @@ export default class GameScene extends Phaser.Scene {
       platform.active = true;
       platform.visible = true;
       this.platformPool.remove(platform);
-      const newRatio = platformWidth / platform.displayWidth;
       platform.displayWidth = platformWidth;
       platform.tileScaleX = 1 / platform.scaleX;
     } else {
@@ -337,7 +336,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerJumps = 0;
       }
       this.player.setVelocityY(gameOptions.jumpForce * -1);
-      this.playerJumps++;
+      this.playerJumps += 1;
 
       // stops animation
       this.player.anims.stop();
