@@ -1,4 +1,4 @@
-import 'phaser';
+import Phaser from 'phaser';
 
 // global game options
 const gameOptions = {
