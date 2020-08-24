@@ -182,11 +182,11 @@ export default class GameScene extends Phaser.Scene {
     }, null, this);
 
     // setting collisions between the player and the fire group
-    this.physics.add.overlap(this.player, this.fireGroup, (player, fire) => {
+    this.physics.add.overlap(this.player, this.fireGroup, (player) => {
       this.dying = true;
-      this.player.anims.stop();
-      this.player.setFrame(2);
-      this.player.body.setVelocityY(-200);
+      player.anims.stop();
+      player.setFrame(2);
+      player.body.setVelocityY(-200);
       this.physics.world.removeCollider(this.platformCollider);
     }, null, this);
 
